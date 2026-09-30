@@ -18,26 +18,32 @@ const IDX = {
 export const SHAPES = {
   oval: {
     label: 'Oval',
+    short: 'Slightly longer than wide, soft jaw',
     blurb: 'A little longer than it is wide, with a softly rounded jaw. Almost any cut works on you, so go with what you like.',
   },
   round: {
     label: 'Round',
+    short: 'Even length and width, soft angles',
     blurb: 'About as wide as it is long, with soft angles. Some height on top and shorter sides will add shape.',
   },
   square: {
     label: 'Square',
+    short: 'Strong jaw, straight sides',
     blurb: 'Strong jaw, wide forehead, fairly straight sides. A bit of texture on top keeps it from looking boxy.',
   },
   oblong: {
     label: 'Oblong',
+    short: 'Long and narrow, straight cheeks',
     blurb: 'Noticeably longer than it is wide. Skip the big height on top; a fringe or fuller sides balance it out.',
   },
   heart: {
     label: 'Heart',
+    short: 'Wide forehead, narrow chin',
     blurb: 'Wider at the forehead, narrowing down to the chin. A fringe or some length around the jaw evens it out.',
   },
   diamond: {
     label: 'Diamond',
+    short: 'Wide cheekbones, narrow top and chin',
     blurb: 'Your cheekbones are the widest point, with a narrower forehead and chin. A fringe or fuller sides work well.',
   },
 };
@@ -100,7 +106,9 @@ export async function analyzeFace(canvas) {
   const norm = (pt) => ({ x: pt.x / W, y: pt.y / H });
   const pts = Object.fromEntries(Object.entries(p).map(([k, v]) => [k, norm(v)]));
 
-  return { shape: scores[0].shape, scores, ratios, pts, warnings, confidence: scores[0].pct };
+  const mesh = face.map((q) => [q.x, q.y]);
+
+  return { shape: scores[0].shape, scores, ratios, pts, mesh, warnings, confidence: scores[0].pct };
 }
 
 export function explainRatios(r) {
