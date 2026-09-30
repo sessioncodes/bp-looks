@@ -5,6 +5,7 @@ import { HAIR_COLORS, recommend, STYLES } from '../lib/styles.js';
 import { createRecolor, hexToRgb, segmentHairCached } from '../lib/hair.js';
 import { loadMeta, prepareUser, renderTryOn } from '../lib/tryon.js';
 import { toast } from '../lib/store.js';
+import { HAIRCUT_TRYON } from '../lib/flags.js';
 
 /* ---------- before / after slider ---------- */
 
@@ -355,7 +356,19 @@ function ColorMode({ photo }) {
 
 export default function TryOn({ photo, analysis, cut, setCut, mode, setMode, onScan }) {
   if (!photo || !analysis) {
-    return <EmptyState icon="mirror" title="See new looks on you" body="Scan a selfie, then try haircuts and hair colors on your own photo." cta="Take a selfie" onClick={onScan} />;
+    return HAIRCUT_TRYON ? (
+      <EmptyState icon="mirror" title="See new looks on you" body="Scan a selfie, then try haircuts and hair colors on your own photo." cta="Take a selfie" onClick={onScan} />
+    ) : (
+      <EmptyState icon="palette" title="Try a new hair color" body="Add a photo and you can see yourself in a dozen shades." cta="Take a selfie" onClick={onScan} />
+    );
+  }
+
+  if (!HAIRCUT_TRYON) {
+    return (
+      <Screen title="Hair color" subtitle="Drag across the photo to compare.">
+        <ColorMode photo={photo} />
+      </Screen>
+    );
   }
 
   return (

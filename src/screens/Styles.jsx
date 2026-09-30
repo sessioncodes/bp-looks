@@ -5,6 +5,7 @@ import { HAIR_TYPES, recommend } from '../lib/styles.js';
 import { SHAPES } from '../lib/face.js';
 import { load, save, toast } from '../lib/store.js';
 import { loadMeta } from '../lib/tryon.js';
+import { HAIRCUT_TRYON } from '../lib/flags.js';
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const article = (w) => (/^[aeiou]/.test(w) ? 'an' : 'a');
@@ -179,7 +180,7 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
                 <span key={t}>{cap(t)} hair</span>
               ))}
             </div>
-            {meta[cut.id] && (
+            {HAIRCUT_TRYON && meta[cut.id] && (
               <Button
                 className="block"
                 onClick={() => {

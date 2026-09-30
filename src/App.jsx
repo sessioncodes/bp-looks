@@ -11,11 +11,12 @@ import { fileToCanvas } from './lib/image.js';
 import { analyzeFace } from './lib/face.js';
 import { preload } from './lib/mp.js';
 import { load, save } from './lib/store.js';
+import { HAIRCUT_TRYON } from './lib/flags.js';
 
 const TABS = [
   { id: 'face', label: 'Scan', icon: 'scan' },
   { id: 'styles', label: 'Cuts', icon: 'scissors' },
-  { id: 'tryon', label: 'Try on', icon: 'mirror' },
+  HAIRCUT_TRYON ? { id: 'tryon', label: 'Try on', icon: 'mirror' } : { id: 'tryon', label: 'Color', icon: 'palette' },
   { id: 'community', label: 'Community', icon: 'users' },
 ];
 const ORDER = TABS.map((t) => t.id);
@@ -29,7 +30,7 @@ export default function App() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
   const [tryCut, setTryCut] = useState(null);
-  const [tryMode, setTryMode] = useState('cut');
+  const [tryMode, setTryMode] = useState(HAIRCUT_TRYON ? 'cut' : 'color');
   const [prefs, setPrefs] = useState(() => load('bp.prefs', { hairType: null, length: null }));
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function App() {
           ))}
         {tab === 'styles' && <Styles analysis={analysis} prefs={prefs} setPrefs={setPrefs} onScan={() => go('face')} onTryOn={(id) => {
               if (id) setTryCut(id);
-              setTryMode(id ? 'cut' : 'color');
+              setTryMode(id && HAIRCUT_TRYON ? 'cut' : 'color');
               go('tryon');
             }}
           />}
