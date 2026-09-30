@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#000"/>
+  <!-- b and p share one bowl and one stem: up for the b, down for the p -->
+  <g transform="translate(8 0)"><g fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round">
+    <circle cx="248" cy="256" r="78"/>
+    <path d="M170 104v304"/>
+  </g>
+  <circle cx="248" cy="256" r="18" fill="#0a84ff"/></g>
+</svg>

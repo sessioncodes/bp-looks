@@ -15,7 +15,7 @@ import { load, save } from './lib/store.js';
 const TABS = [
   { id: 'face', label: 'Scan', icon: 'scan' },
   { id: 'styles', label: 'Cuts', icon: 'scissors' },
-  { id: 'tryon', label: 'Color', icon: 'palette' },
+  { id: 'tryon', label: 'Try on', icon: 'mirror' },
   { id: 'community', label: 'Community', icon: 'users' },
 ];
 const ORDER = TABS.map((t) => t.id);
@@ -28,6 +28,8 @@ export default function App() {
   const [pending, setPending] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
+  const [tryCut, setTryCut] = useState(null);
+  const [tryMode, setTryMode] = useState('cut');
   const [prefs, setPrefs] = useState(() => load('bp.prefs', { hairType: null, length: null }));
 
   useEffect(() => {
@@ -109,8 +111,15 @@ export default function App() {
           ) : (
             <Home onFile={scan} error={error} />
           ))}
-        {tab === 'styles' && <Styles analysis={analysis} prefs={prefs} setPrefs={setPrefs} onScan={() => go('face')} onTryOn={() => go('tryon')} />}
-        {tab === 'tryon' && <TryOn photo={photo} onScan={() => go('face')} />}
+        {tab === 'styles' && <Styles analysis={analysis} prefs={prefs} setPrefs={setPrefs} onScan={() => go('face')} onTryOn={(id) => {
+              if (id) setTryCut(id);
+              setTryMode(id ? 'cut' : 'color');
+              go('tryon');
+            }}
+          />}
+        {tab === 'tryon' && (
+          <TryOn photo={photo} analysis={analysis} cut={tryCut} setCut={setTryCut} mode={tryMode} setMode={setTryMode} onScan={() => go('face')} />
+        )}
         {tab === 'community' && <Community />}
       </motion.main>
       <TabBar tabs={TABS} active={tab} onChange={go} />

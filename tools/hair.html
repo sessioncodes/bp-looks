@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hair asset tool</title>
+    <style>
+      body { font: 13px system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+      h2 { margin: 18px 0 6px; font-size: 15px; }
+      .row { display: flex; gap: 6px; overflow-x: auto; }
+      .c { position: relative; flex: 0 0 auto; width: 120px; }
+      .c img { width: 120px; height: 150px; object-fit: cover; display: block; border-radius: 6px; }
+      .c b { position: absolute; top: 4px; left: 4px; background: #000c; padding: 1px 5px; border-radius: 4px; }
+      .c i { position: absolute; bottom: 4px; left: 4px; background: #000c; padding: 1px 5px; border-radius: 4px; font-style: normal; font-size: 11px; }
+      .c.bad { opacity: 0.25; }
+      #log { white-space: pre-wrap; color: #9f9; }
+    </style>
+  </head>
+  <body>
+    <div id="log">loading…</div>
+    <div id="out"></div>
+    <script type="module" src="./hair.js"></script>
+  </body>
+</html>

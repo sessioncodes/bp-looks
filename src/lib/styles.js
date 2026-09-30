@@ -57,6 +57,18 @@ export const STYLES = [
     tip: 'Use a coil sponge on 2-3 inches of growth, or twist damp hair and unravel when dry.',
   },
   {
+    id: 'waves-360', name: '360 Waves', length: 'short', types: ['coily', 'curly'],
+    fit: f(5, 4, 5, 3, 4, 4),
+    desc: 'Short, brushed-down hair with a rippling wave pattern all the way around.',
+    tip: 'Ask for a #1-2 on top with a clean line-up. Brush daily and wear a durag at night to set the waves.',
+  },
+  {
+    id: 'afro', name: 'Afro', length: 'medium', types: ['coily', 'curly'],
+    fit: f(5, 3, 5, 5, 4, 5),
+    desc: 'Full natural volume, shaped evenly into a rounded outline.',
+    tip: 'Ask for a shape-up that keeps it round and even. Pick it out from the roots and moisturize daily.',
+  },
+  {
     id: 'curtains', name: 'Curtains / Middle Part', length: 'medium', types: ['straight', 'wavy'],
     fit: f(5, 2, 3, 5, 4, 5),
     desc: 'Center-parted length that frames both sides of the face.',

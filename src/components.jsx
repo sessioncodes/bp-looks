@@ -26,6 +26,7 @@ const ICONS = {
   download: 'M12 3v12M7 10l5 5 5-5M4 21h16',
   sliders: 'M9 6l-6 6 6 6M15 6l6 6-6 6',
   check: 'm5 12 5 5L20 7',
+  mirror: 'M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM12 11.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8.2 18c.6-2.1 2-3.3 3.8-3.3s3.2 1.2 3.8 3.3',
 };
 
 export function Icon({ name, size = 22, stroke = 1.8, fill = 'none' }) {

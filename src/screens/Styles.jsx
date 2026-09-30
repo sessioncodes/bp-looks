@@ -4,6 +4,7 @@ import { Button, Chip, EmptyState, FitBars, Icon, Screen, Segmented, Sheet } fro
 import { HAIR_TYPES, recommend } from '../lib/styles.js';
 import { SHAPES } from '../lib/face.js';
 import { load, save, toast } from '../lib/store.js';
+import { loadMeta } from '../lib/tryon.js';
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const article = (w) => (/^[aeiou]/.test(w) ? 'an' : 'a');
@@ -30,7 +31,12 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
   const [saved, setSaved] = useState(() => load('bp.saved', []));
   const [onlySaved, setOnlySaved] = useState(false);
 
+  const [meta, setMeta] = useState({});
+
   useEffect(() => save('bp.saved', saved), [saved]);
+  useEffect(() => {
+    loadMeta().then(setMeta);
+  }, []);
 
   const list = useMemo(() => {
     if (!analysis) return [];
@@ -106,6 +112,7 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
                 transition={{ type: 'spring', stiffness: 420, damping: 36 }}
               >
                 <motion.div className="cut" whileTap={{ scale: 0.985 }} onClick={() => setOpen(s.id)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setOpen(s.id)}>
+                  {meta[s.id] && <img className="cut-thumb" src={`/cuts/${s.id}-0.jpg`} alt="" loading="lazy" />}
                   <div className="cut-main">
                     <h3>{s.name}</h3>
                     <p>{s.desc}</p>
@@ -137,6 +144,13 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
       <Sheet open={!!cut} onClose={close}>
         {cut && (
           <div className="sheet-body">
+            {meta[cut.id] && (
+              <div className="sheet-photos">
+                {meta[cut.id].map((r, i) => (
+                  <img key={i} src={`/cuts/${cut.id}-${i}.jpg`} alt={`${cut.name}, reference photo by ${r.by}`} />
+                ))}
+              </div>
+            )}
             <div className="sheet-head">
               <div>
                 <h2>{cut.name}</h2>
@@ -165,16 +179,28 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
                 <span key={t}>{cap(t)} hair</span>
               ))}
             </div>
+            {meta[cut.id] && (
+              <Button
+                className="block"
+                onClick={() => {
+                  close();
+                  onTryOn(cut.id);
+                }}
+              >
+                <Icon name="mirror" size={18} /> See it on me
+              </Button>
+            )}
             <Button
               variant="secondary"
               className="block"
               onClick={() => {
                 close();
-                onTryOn();
+                onTryOn(null);
               }}
             >
               <Icon name="palette" size={18} /> Try a hair color
             </Button>
+            {meta[cut.id] && <p className="credit">Photos: {meta[cut.id].map((r) => r.by).join(', ')} on Unsplash</p>}
           </div>
         )}
       </Sheet>

@@ -42,6 +42,13 @@ export async function segmentHair(src) {
   return { alpha, coverage: hairPx / maskData.length };
 }
 
+// The color and haircut try-ons both need the mask; compute it once per photo.
+const cache = new WeakMap();
+export function segmentHairCached(src) {
+  if (!cache.has(src)) cache.set(src, segmentHair(src));
+  return cache.get(src);
+}
+
 export const hexToRgb = (hex) => {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
