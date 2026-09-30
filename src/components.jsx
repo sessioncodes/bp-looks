@@ -8,26 +8,30 @@ const ICONS = {
   camera: 'M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3l-1.5-2ZM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
   image: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM9 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM21 15l-5-5L5 21',
   lock: 'M7 11V7a5 5 0 0 1 10 0v4M5 11h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z',
-  zap: 'M13 2 3 14h9l-1 8 10-12h-9l1-8Z',
+  sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  glasses: 'M6 18a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM18 18a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM10 14c1.3-1 2.7-1 4 0M2 14l1.5-7M22 14l-1.5-7',
+  face: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM9 10h.01M15 10h.01M9 15h6',
   check: 'm5 12 5 5L20 7',
   arrow: 'M5 12h14M13 6l6 6-6 6',
   refresh: 'M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5',
-  alert: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  alert: 'M12 8v5M12 16.5h.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z',
   chevron: 'm6 9 6 6 6-6',
   eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
-  share: 'M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v14',
+  grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+  message: 'M21 12a8 8 0 0 1-11.8 7L3 21l2-6.2A8 8 0 1 1 21 12Z',
+  bookmark: 'M6 3h12v18l-6-4-6 4V3Z',
 };
 
-export function Icon({ name, size = 22 }) {
+export function Icon({ name, size = 22, stroke = 1.7 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={ICONS[name]} />
     </svg>
   );
 }
 
-// Draws the photo on a canvas and lays measurement lines on top.
-export function PhotoCard({ photo, pts, scanning, children }) {
+// Draws the photo on a canvas, with optional measurement lines on top.
+export function PhotoCard({ photo, pts, children }) {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current;
@@ -37,8 +41,8 @@ export function PhotoCard({ photo, pts, scanning, children }) {
     c.getContext('2d').drawImage(photo, 0, 0);
   }, [photo]);
 
-  const line = (a, b, cls, delay) => (
-    <line key={cls} className={'mline ' + cls} style={{ animationDelay: delay + 's' }} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke" />
+  const line = (a, b, delay) => (
+    <line className="mline" style={{ animationDelay: delay + 's' }} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke" />
   );
 
   return (
@@ -46,16 +50,15 @@ export function PhotoCard({ photo, pts, scanning, children }) {
       <canvas ref={ref} />
       {pts && (
         <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="overlay">
-          {line(pts.top, pts.chin, 'l1', 0.1)}
-          {line(pts.cheekL, pts.cheekR, 'l2', 0.4)}
-          {line(pts.foreL, pts.foreR, 'l3', 0.7)}
-          {line(pts.jawL, pts.jawR, 'l4', 1.0)}
+          {line(pts.top, pts.chin, 0.1)}
+          {line(pts.foreL, pts.foreR, 0.3)}
+          {line(pts.cheekL, pts.cheekR, 0.5)}
+          {line(pts.jawL, pts.jawR, 0.7)}
           {['top', 'chin', 'cheekL', 'cheekR', 'foreL', 'foreR', 'jawL', 'jawR'].map((k) => (
-            <circle key={k} cx={pts[k].x} cy={pts[k].y} r="0.007" className="mdot" />
+            <circle key={k} cx={pts[k].x} cy={pts[k].y} r="0.006" className="mdot" />
           ))}
         </svg>
       )}
-      {scanning && <div className="scanline" />}
       {children}
     </div>
   );
@@ -63,23 +66,23 @@ export function PhotoCard({ photo, pts, scanning, children }) {
 
 export function Chip({ active, onClick, children }) {
   return (
-    <button className={'chip' + (active ? ' active' : '')} onClick={onClick}>
+    <button className={'chip' + (active ? ' active' : '')} onClick={onClick} aria-pressed={active}>
       {children}
     </button>
   );
 }
 
-export function EmptyState({ title, body, cta, onClick }) {
+export function EmptyState({ icon = 'face', title, body, cta, onClick }) {
   return (
     <div className="empty">
-      <div className="empty-ring">
-        <Icon name="scan" size={30} />
+      <div className="empty-ic">
+        <Icon name={icon} size={26} />
       </div>
       <h2>{title}</h2>
       <p>{body}</p>
       {cta && (
         <button className="btn primary" onClick={onClick}>
-          {cta} <Icon name="arrow" size={18} />
+          {cta}
         </button>
       )}
     </div>

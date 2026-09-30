@@ -19,9 +19,9 @@ const load = (k, d) => {
 };
 
 const TABS = [
-  { id: 'face', label: 'Face', icon: 'scan' },
-  { id: 'styles', label: 'Styles', icon: 'scissors' },
-  { id: 'tryon', label: 'Try-on', icon: 'palette' },
+  { id: 'face', label: 'Scan', icon: 'scan' },
+  { id: 'styles', label: 'Cuts', icon: 'scissors' },
+  { id: 'tryon', label: 'Color', icon: 'palette' },
   { id: 'community', label: 'Community', icon: 'users' },
 ];
 
@@ -49,7 +49,7 @@ export default function App() {
     try {
       const canvas = await fileToCanvas(file);
       setPhoto(canvas);
-      const [result] = await Promise.all([analyzeFace(canvas), new Promise((r) => setTimeout(r, 2200))]);
+      const [result] = await Promise.all([analyzeFace(canvas), new Promise((r) => setTimeout(r, 1800))]);
       setAnalysis(result);
       setTab('face');
     } catch (e) {
@@ -57,8 +57,8 @@ export default function App() {
       setAnalysis(null);
       setError(
         e.message === 'NO_FACE'
-          ? "We couldn't find a face. Try a well-lit, front-facing photo with your hair pulled back."
-          : "Couldn't analyze that photo. Check your connection (the AI model downloads on first use) and try again."
+          ? "We couldn't find a face in that photo. Try a straight-on selfie in good light."
+          : "Something went wrong loading the scanner. Check your connection and try again."
       );
     } finally {
       setBusy(false);

@@ -18,27 +18,27 @@ const IDX = {
 export const SHAPES = {
   oval: {
     label: 'Oval',
-    blurb: 'Balanced proportions with a gently curved jaw. The most versatile shape: most cuts work, so pick by vibe.',
+    blurb: 'A little longer than it is wide, with a softly rounded jaw. Almost any cut works on you, so go with what you like.',
   },
   round: {
     label: 'Round',
-    blurb: 'Face length and width are close, with soft edges. Height on top and clean sides add definition.',
+    blurb: 'About as wide as it is long, with soft angles. Some height on top and shorter sides will add shape.',
   },
   square: {
     label: 'Square',
-    blurb: 'A strong, angular jaw and a broad forehead. Texture and softer tops balance the sharp lines.',
+    blurb: 'Strong jaw, wide forehead, fairly straight sides. A bit of texture on top keeps it from looking boxy.',
   },
   oblong: {
     label: 'Oblong',
-    blurb: 'Longer than wide with a straight cheek line. Fringes and side volume shorten and widen the look.',
+    blurb: 'Noticeably longer than it is wide. Skip the big height on top; a fringe or fuller sides balance it out.',
   },
   heart: {
     label: 'Heart',
-    blurb: 'A wider forehead tapering to a narrower chin. Fringes and fuller lengths balance the top.',
+    blurb: 'Wider at the forehead, narrowing down to the chin. A fringe or some length around the jaw evens it out.',
   },
   diamond: {
     label: 'Diamond',
-    blurb: 'Prominent cheekbones with a narrower forehead and jaw. Fringes and volume at the temples soften it.',
+    blurb: 'Your cheekbones are the widest point, with a narrower forehead and chin. A fringe or fuller sides work well.',
   },
 };
 
@@ -92,9 +92,9 @@ export async function analyzeFace(canvas) {
   const yaw = (dist(p.nose, p.cheekL) - dist(p.nose, p.cheekR)) / cheek;
   const tilt = Math.abs(Math.atan2(p.eyeR.y - p.eyeL.y, p.eyeR.x - p.eyeL.x)) * (180 / Math.PI);
   const warnings = [];
-  if (Math.abs(yaw) > 0.18) warnings.push('Your face is turned. Look straight at the camera for a more accurate read.');
-  if (tilt > 8) warnings.push('Your head looks tilted. Keep it level.');
-  if (cheek / W < 0.25) warnings.push('Your face is small in the frame. Move closer.');
+  if (Math.abs(yaw) > 0.18) warnings.push("You're turned a little to the side. A straight-on photo gives a better read.");
+  if (tilt > 8) warnings.push("Your head's tilted. Try holding it level.");
+  if (cheek / W < 0.25) warnings.push("You're a bit far from the camera. Get closer for a better read.");
 
   // Points (normalized) for the overlay
   const norm = (pt) => ({ x: pt.x / W, y: pt.y / H });
@@ -105,8 +105,8 @@ export async function analyzeFace(canvas) {
 
 export function explainRatios(r) {
   return [
-    { label: 'Face length', hint: 'vs. cheek width', value: r.length, min: 1.05, max: 1.7 },
-    { label: 'Forehead width', hint: 'vs. cheek width', value: r.forehead, min: 0.6, max: 1.05 },
-    { label: 'Jaw width', hint: 'vs. cheek width', value: r.jaw, min: 0.55, max: 1.0 },
+    { label: 'Face length', hint: 'Compared to your cheek width', value: r.length, min: 1.05, max: 1.7 },
+    { label: 'Forehead', hint: 'Compared to your cheek width', value: r.forehead, min: 0.6, max: 1.05 },
+    { label: 'Jaw', hint: 'Compared to your cheek width', value: r.jaw, min: 0.55, max: 1.0 },
   ];
 }

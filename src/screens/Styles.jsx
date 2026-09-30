@@ -4,69 +4,85 @@ import { HAIR_TYPES, LENGTHS, recommend } from '../lib/styles.js';
 import { SHAPES } from '../lib/face.js';
 
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const fitLabel = (n) => (n >= 5 ? 'Best fit' : n >= 4 ? 'Good fit' : n >= 3 ? 'Works' : 'Tricky');
 
 export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
   const [open, setOpen] = useState(null);
   const list = useMemo(() => (analysis ? recommend(analysis.shape, prefs) : []), [analysis, prefs]);
 
   if (!analysis) {
-    return <EmptyState title="Scan first" body="We need your face shape to rank hairstyles for you." cta="Scan my face" onClick={onScan} />;
+    return (
+      <EmptyState
+        icon="scissors"
+        title="No scan yet"
+        body="Take a selfie first and we'll sort these cuts by what suits your face."
+        cta="Take a selfie"
+        onClick={onScan}
+      />
+    );
   }
 
   const toggle = (k, v) => setPrefs((p) => ({ ...p, [k]: p[k] === v ? null : v }));
 
   return (
-    <div className="styles">
+    <>
       <header className="page-head">
-        <p className="eyebrow">{SHAPES[analysis.shape].label} face</p>
-        <h1>Your hairstyles</h1>
+        <h1>Haircuts for you</h1>
+        <p>Sorted for a {SHAPES[analysis.shape].label.toLowerCase()} face. Tap one for what to tell your barber.</p>
       </header>
 
       <div className="filters">
-        <div className="chips">
-          <span className="chips-label">Hair type</span>
+        <div className="seg">
           {HAIR_TYPES.map((t) => (
-            <Chip key={t} active={prefs.hairType === t} onClick={() => toggle('hairType', t)}>{cap(t)}</Chip>
+            <Chip key={t} active={prefs.hairType === t} onClick={() => toggle('hairType', t)}>
+              {cap(t)}
+            </Chip>
           ))}
         </div>
-        <div className="chips">
-          <span className="chips-label">Length</span>
+        <div className="seg">
           {LENGTHS.map((t) => (
-            <Chip key={t} active={prefs.length === t} onClick={() => toggle('length', t)}>{cap(t)}</Chip>
+            <Chip key={t} active={prefs.length === t} onClick={() => toggle('length', t)}>
+              {cap(t)}
+            </Chip>
           ))}
         </div>
       </div>
 
-      {list.length === 0 && <p className="muted center pad">No styles match those filters. Try loosening one.</p>}
+      {list.length === 0 && <p className="empty-note">Nothing matches both filters. Try removing one.</p>}
 
       <div className="list">
-        {list.map((s, i) => {
+        {list.map((s) => {
           const isOpen = open === s.id;
+          const n = s.fit[analysis.shape];
           return (
-            <article className={'style card' + (isOpen ? ' open' : '')} key={s.id}>
-              <button className="style-head" onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen}>
-                <span className="rank">{i + 1}</span>
-                <div className="style-main">
+            <article className="cut card" key={s.id}>
+              <button className="cut-head" onClick={() => setOpen(isOpen ? null : s.id)} aria-expanded={isOpen}>
+                <div className="cut-main">
                   <h3>{s.name}</h3>
                   <p>{s.desc}</p>
-                  <div className="tags">
+                </div>
+                <div className={'fit' + (n >= 5 ? ' best' : '')}>
+                  <span>{fitLabel(n)}</span>
+                  <div className="pips">
+                    {[1, 2, 3, 4, 5].map((k) => (
+                      <i key={k} className={k <= n ? 'on' : ''} />
+                    ))}
+                  </div>
+                </div>
+              </button>
+              {isOpen && (
+                <div className="cut-body">
+                  <div className="say">
+                    <b>Tell your barber</b>
+                    {s.tip}
+                  </div>
+                  <div className="meta-row">
                     <span>{cap(s.length)}</span>
                     {s.types.map((t) => (
                       <span key={t}>{cap(t)}</span>
                     ))}
                   </div>
-                </div>
-                <div className="score" style={{ '--p': s.match }}>
-                  <b>{s.match}</b>
-                  <small>%</small>
-                </div>
-                <Icon name="chevron" size={18} />
-              </button>
-              {isOpen && (
-                <div className="style-body">
-                  <h4>Ask your barber</h4>
-                  <p>{s.tip}</p>
-                  <button className="btn ghost small" onClick={onTryOn}>
+                  <button className="btn secondary sm" onClick={onTryOn}>
                     <Icon name="palette" size={16} /> Try a hair color
                   </button>
                 </div>
@@ -75,6 +91,6 @@ export default function Styles({ analysis, prefs, setPrefs, onScan, onTryOn }) {
           );
         })}
       </div>
-    </div>
+    </>
   );
 }

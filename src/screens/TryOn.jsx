@@ -7,8 +7,8 @@ export default function TryOn({ photo, onScan }) {
   const out = useRef(null);
   const [state, setState] = useState('loading'); // loading | ready | error
   const [mask, setMask] = useState(null);
-  const [color, setColor] = useState(HAIR_COLORS[9]);
-  const [strength, setStrength] = useState(0.75);
+  const [color, setColor] = useState(HAIR_COLORS[3]);
+  const [strength, setStrength] = useState(0.7);
   const [compare, setCompare] = useState(false);
 
   useEffect(() => {
@@ -34,29 +34,32 @@ export default function TryOn({ photo, onScan }) {
   }, [state, mask, color, strength, compare, photo]);
 
   if (!photo) {
-    return <EmptyState title="Scan first" body="Upload a photo and you can try on hair colors right away." cta="Scan my face" onClick={onScan} />;
+    return (
+      <EmptyState
+        icon="palette"
+        title="See yourself in a new color"
+        body="Add a photo and you can try a dozen hair colors on it."
+        cta="Take a selfie"
+        onClick={onScan}
+      />
+    );
   }
 
+  const stop = () => setCompare(false);
+
   return (
-    <div className="tryon">
+    <>
       <header className="page-head">
-        <p className="eyebrow">Hair color</p>
-        <h1>Try-on</h1>
+        <h1>Hair color</h1>
+        <p>Pick a shade. Hold the photo to see your original.</p>
       </header>
 
       <div className="photocard" style={{ aspectRatio: `${photo.width} / ${photo.height}` }}>
         {state === 'ready' ? <canvas ref={out} /> : <div className="skeleton" />}
-        {state === 'loading' && <div className="scanline" />}
-        {state === 'loading' && <span className="badge">Finding your hair…</span>}
+        {state === 'loading' && <span className="pill">Finding your hair…</span>}
         {state === 'ready' && (
-          <button
-            className="hold"
-            onPointerDown={() => setCompare(true)}
-            onPointerUp={() => setCompare(false)}
-            onPointerLeave={() => setCompare(false)}
-            onPointerCancel={() => setCompare(false)}
-          >
-            <Icon name="eye" size={16} /> Hold to compare
+          <button className="pill hold" onPointerDown={() => setCompare(true)} onPointerUp={stop} onPointerLeave={stop} onPointerCancel={stop}>
+            <Icon name="eye" size={15} /> {compare ? 'Original' : 'Hold to compare'}
           </button>
         )}
       </div>
@@ -64,34 +67,31 @@ export default function TryOn({ photo, onScan }) {
       {state === 'error' && (
         <div className="notice warn">
           <Icon name="alert" size={18} />
-          <span>Couldn't find your hair in this photo. Try one with your full head visible against a plain background.</span>
+          <span>We couldn't pick out your hair in this one. A photo with your whole head in frame works best.</span>
         </div>
       )}
 
       {state === 'ready' && (
-        <>
-          <section className="card">
-            <h3 className="section-title">Color · {color.name}</h3>
-            <div className="swatches">
-              {HAIR_COLORS.map((c) => (
-                <button
-                  key={c.hex}
-                  className={'swatch' + (c.hex === color.hex ? ' active' : '')}
-                  style={{ background: c.hex }}
-                  onClick={() => setColor(c)}
-                  aria-label={c.name}
-                  title={c.name}
-                />
-              ))}
-            </div>
-            <label className="slider">
-              <span>Intensity</span>
-              <input type="range" min="0.2" max="1" step="0.05" value={strength} onChange={(e) => setStrength(+e.target.value)} />
-            </label>
-          </section>
-          <p className="muted small center">Color preview only. Hairstyle (cut) try-on is on the roadmap.</p>
-        </>
+        <section className="card">
+          <p className="label">{color.name}</p>
+          <div className="swatches">
+            {HAIR_COLORS.map((c) => (
+              <button
+                key={c.hex}
+                className={'swatch' + (c.hex === color.hex ? ' active' : '')}
+                style={{ background: c.hex }}
+                onClick={() => setColor(c)}
+                aria-label={c.name}
+                title={c.name}
+              />
+            ))}
+          </div>
+          <label className="slider">
+            <span>Strength</span>
+            <input type="range" min="0.2" max="1" step="0.05" value={strength} onChange={(e) => setStrength(+e.target.value)} />
+          </label>
+        </section>
       )}
-    </div>
+    </>
   );
 }
