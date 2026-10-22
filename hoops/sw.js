@@ -1,4 +1,4 @@
-const V='playbook-v2',FILES=['./','index.html','styles.css','app.js','cloud.js','firebase-config.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png','apple-touch-icon.png'];
+const V='playbook-v3',FILES=['./','index.html','styles.css','app.js','cloud.js','firebase-config.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png','apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(FILES)).catch(()=>{}).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // Only cache this app's own files and fonts. Firebase traffic (auth, database) always goes straight to the network.

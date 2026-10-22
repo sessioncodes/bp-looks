@@ -11,8 +11,9 @@ async function firebaseCloud(cfg){
   const B='https://www.gstatic.com/firebasejs/10.12.2/';
   const [A,AU,F]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
   // On Firebase Hosting, use our own domain for the auth handler so sign-in works in Safari and home-screen apps.
+  // On Vercel, api/fb-auth.js proxies /__/auth/* for the same reason (useAuthProxy is set at build time).
   const onFbHost=/\.(web\.app|firebaseapp\.com)$/.test(location.hostname);
-  const app=A.initializeApp(onFbHost?{...cfg,authDomain:location.host}:cfg);
+  const app=A.initializeApp(onFbHost||cfg.useAuthProxy?{...cfg,authDomain:location.host}:cfg);
   const auth=AU.getAuth(app),db=F.getFirestore(app);
   const {doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,onSnapshot,writeBatch,arrayUnion,arrayRemove,deleteField}=F;
   AU.getRedirectResult(auth).catch(e=>console.warn('sign-in redirect',e));
@@ -98,7 +99,10 @@ function localCloud(){
 
 window.makeCloud=async()=>{
   const cfg=window.FIREBASE_CONFIG||{};
-  if(cfg.apiKey){try{return await firebaseCloud(cfg)}catch(e){console.warn('Firebase failed to load, using demo mode',e)}}
-  return localCloud();
+  if(cfg.apiKey){try{return await firebaseCloud(cfg)}catch(e){console.warn('Firebase failed to load',e)}}
+  // Demo mode is for trying things locally; on a real domain, team features stay off until Firebase is set up.
+  const local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)||location.protocol==='file:';
+  const c=localCloud();if(!local&&!cfg.apiKey)c.off=true;
+  return c;
 };
 })();

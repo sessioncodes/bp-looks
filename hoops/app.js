@@ -781,7 +781,7 @@ const ago=ts=>{if(!ts)return'';const s=(Date.now()-ts)/1000;return s<60?'just no
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 function refreshCloud(){if(R.name!=='team')return;const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea')&&a.closest('#main'))return;teamScreen()}
 function cloudBoot(){
-  makeCloud().then(cl=>{window.CL=cl;C.ready=true;C.demo=cl.demo;
+  makeCloud().then(cl=>{window.CL=cl;C.ready=true;C.demo=cl.demo;C.off=!!cl.off;if(C.off){refreshCloud();return}
     cl.onAuth(async u=>{C.user=u;C.profile=null;if(u){try{C.profile=await cl.getProfile(u.uid)}catch(e){}}watchTeams();refreshCloud();pendingJoin()});
   }).catch(e=>{console.warn(e);C.ready=true;refreshCloud()});
 }
@@ -832,6 +832,7 @@ function teamScreen(){
   const demo=C.demo?`<div class="demo">${ic('info',16)}<span>Demo mode: team data stays on this device until Firebase is connected.</span></div>`:'';
   const pj=localStorage.getItem('pb.join');
   if(!C.ready){main().innerHTML=`<div class="screen">${head('Team')}<div class="empty"><b>Loading…</b></div></div>`;return}
+  if(C.off){main().innerHTML=`<div class="screen">${head('Team','Plays for your whole team')}<div class="hero"><div class="hero-art" style="background:${cp().bg}">${teamArt()}</div><div class="hero-body"><h3>Teams are coming soon</h3><p style="margin:0;color:var(--text2);font-size:15.5px;line-height:1.45">Team sign-in isn’t switched on for this site yet. You can still create, watch and share plays from the Plays tab.</p></div></div></div>`;return}
   if(!C.user){
     main().innerHTML=`<div class="screen">${head('Team','Plays for your whole team')}
      ${pj?`<div class="joining">${ic('users',18)}<span>You’re joining a team (code <b>${esc(pj)}</b>). Sign in to continue.</span></div>`:''}
