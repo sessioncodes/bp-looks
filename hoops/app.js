@@ -18,7 +18,7 @@ const IC={
  share:'M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7',undo:'M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11',redo:'M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13',
  trash:'M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3',copy:'M9 9h10v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9zM5 15V5a2 2 0 0 1 2-2h8',
  edit:'M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16v4zM13.5 6.5l4 4',image:'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21',
- x:'M18 6L6 18M6 6l12 12',info:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-4M12 8h.01',eye:'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+ video:'M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM16 10.5l6-3.5v10l-6-3.5',x:'M18 6L6 18M6 6l12 12',check:'M5 12.5l4.5 4.5L19 7.5',info:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16v-4M12 8h.01',eye:'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
  download:'M12 4v11M7 10l5 5 5-5M5 20h14',upload:'M12 20V9M7 14l5-5 5 5M5 4h14',clear:'M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0zM9 9l6 6M15 9l-6 6'};
 const FILLED=new Set(['play','pause','prev','next']);
 const ic=(n,s=22,o={})=>{const f=o.fill||FILLED.has(n);return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="${f?'currentColor':'none'}" stroke="${f&&FILLED.has(n)?'none':'currentColor'}" stroke-width="${o.sw||(n==='more'?3.2:1.9)}" stroke-linecap="round" stroke-linejoin="round"><path d="${IC[n]}"/></svg>`};
@@ -38,8 +38,9 @@ function applySettings(){
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(store.settings.theme==='system'){applySettings()}});
 
 /* ============ store ============ */
-const DEF={settings:{theme:'system',court:'charcoal',labels:'num',mode:'coach',speed:1,loop:false},
-  team:{name:'My Team',roster:[{n:'1',name:'',pos:'PG'},{n:'2',name:'',pos:'SG'},{n:'3',name:'',pos:'SF'},{n:'4',name:'',pos:'PF'},{n:'5',name:'',pos:'C'}]},
+const DEF={settings:{theme:'system',court:'charcoal',labels:'num',mode:'coach',speed:1,loop:false,offColor:'#ff6a1a',defColor:'auto',defStyle:'circle'},
+  team:{name:'My Team',roster:[{n:'1',name:'',pos:'PG'},{n:'2',name:'',pos:'SG'},{n:'3',name:'',pos:'SF'},{n:'4',name:'',pos:'PF'},{n:'5',name:'',pos:'C'}],
+    defRoster:[{n:'1',name:''},{n:'2',name:''},{n:'3',name:''},{n:'4',name:''},{n:'5',name:''}]},
   plays:[],favs:[]};
 let store=clone(DEF);
 const newStep=()=>({moves:{},pass:null,note:'',dur:1.9});
@@ -50,7 +51,7 @@ function normalize(p){
   while(p.start.length<5)p.start.push({x:250,y:250});
   if(p.start.length>5&&p.start.length<10)p.start.length=5;
   p.defense=p.start.length===10;
-  p.steps=(p.steps||[]).map(s=>{const m={};for(const k in (s.moves||{})){const v=s.moves[k];m[k]={x:+v.x,y:+v.y,t:['move','cut','drib','scr'].includes(v.t)?v.t:'cut'}}return{moves:m,pass:s.pass==null?null:s.pass|0,note:String(s.note||'').slice(0,200),dur:Math.min(4,Math.max(.6,+s.dur||1.9))}});
+  p.steps=(p.steps||[]).map(s=>{const m={};for(const k in (s.moves||{})){const v=s.moves[k];m[k]={x:+v.x,y:+v.y,t:['move','cut','drib','scr'].includes(v.t)?v.t:'cut'}}return{moves:m,pass:s.pass==null?null:s.pass|0,note:String(s.note||'').slice(0,200),shot:s.shot?{made:!!s.shot.made}:null,dur:Math.min(4,Math.max(.6,+s.dur||1.9))}});
   if(!p.steps.length)p.steps=[newStep()];
   return p;
 }
@@ -81,10 +82,27 @@ function stateAt(pl,T){
   const N=pl.steps.length;
   const s=Math.max(0,Math.min(Math.floor(T)||0,N-1)),f=T>=N?1:T-s,e=ease(Math.min(1,f/.86));
   const a=posAt(pl,s),b=endPos(pl,s),pos=a.map((q,i)=>lerp(q,b[i],e));
-  const h=holderAt(pl,s),ps=pl.steps[s].pass;let ball=pos[h];
-  if(ps!=null&&e>.3)ball=lerp(pos[h],pos[ps],Math.min(1,(e-.3)/.6));
-  return{pos,ball:ballOff(ball),step:s};
+  const st=pl.steps[s],h=holderAt(pl,s),ps=st.pass,sh=st.shot;
+  // with a shot, the pass happens earlier so the shot has time at the end of the step
+  const pA=sh?.15:.3,pB=sh?.5:.9;
+  let ball=ballOff(pos[h]),br=1,bo=1,fx=null;
+  if(ps!=null&&e>pA)ball=ballOff(lerp(pos[h],pos[ps],Math.min(1,(e-pA)/(pB-pA))));
+  if(sh){
+    const shooter=ps!=null?ps:h,g=Math.max(0,(f-.86)/.14);
+    if(e>.58){const u=Math.min(1,(e-.58)/.42);ball=shotPt(ballOff(pos[shooter]),u);br=1+.55*Math.sin(Math.PI*u)}
+    if(g>0){
+      if(sh.made){ball={x:RIM.x,y:RIM.y+16*g};br=1-.3*g;bo=1-.6*g}
+      else{const side=pos[shooter].x<RIM.x?1:-1;ball={x:RIM.x+side*55*g,y:RIM.y+75*g-40*Math.sin(Math.PI*g)};br=1+.15*Math.sin(Math.PI*g)}
+      fx={made:sh.made,k:g};
+    }
+  }
+  return{pos,ball,br,bo,fx,step:s};
 }
+const RIM={x:250,y:52};
+// shot arc: a slight curve toward the rim; the ball grows mid-flight to show height
+function shotCtrl(a){const dx=RIM.x-a.x,dy=RIM.y-a.y,d=Math.hypot(dx,dy)||1;return{x:(a.x+RIM.x)/2-dy/d*28,y:(a.y+RIM.y)/2+dx/d*28}}
+function shotPt(a,u){const c=shotCtrl(a),q=1-u;return{x:q*q*a.x+2*q*u*c.x+u*u*RIM.x,y:q*q*a.y+2*q*u*c.y+u*u*RIM.y}}
+const shooterAt=(pl,k)=>{const st=pl.steps[k];return st.pass!=null?st.pass:holderAt(pl,k)};
 function shadowPt(p){const dx=BASKET.x-p.x,dy=BASKET.y-p.y,d=Math.hypot(dx,dy)||1,k=Math.min(48,d*.6)/d;return{x:p.x+dx*k,y:p.y+dy*k}}
 function genDefense(pl){
   pl.start=pl.start.slice(0,5);for(let i=0;i<5;i++)pl.start.push(shadowPt(pl.start[i]));
@@ -102,12 +120,12 @@ const PRESETS=[
   start:[S(250,370),S(420,270),S(80,270),S(150,180),S(330,230)],
   steps:[{moves:{4:M(300,300,'scr')},note:'5 sets a screen for 1 at the top of the key.'},
    {moves:{0:M(370,255,'drib'),4:M(270,130)},note:'1 uses the screen and dribbles right. 5 rolls hard to the rim.'},
-   {moves:{4:M(250,90)},pass:4,note:'1 hits the rolling big for the finish.'}]}),
+   {moves:{4:M(250,90)},pass:4,shot:{made:true},note:'1 hits the rolling big, who finishes at the rim.'}]}),
  mk({id:'pre-gg',name:'Give & Go',cat:'Offense',ball:0,defense:true,desc:'Pass, then cut straight to the basket and get it right back. Works against defenders who watch the ball.',
   start:[S(250,380),S(410,270),S(90,270),S(160,170),S(340,170)],
   steps:[{moves:{0:M(290,335)},pass:1,note:'1 passes to the wing and gets ready to cut.'},
    {moves:{0:M(240,115)},note:'1 cuts hard to the basket right after the pass.'},
-   {moves:{0:M(262,86)},pass:0,note:'2 returns the pass for the layup.'}]}),
+   {moves:{0:M(262,86)},pass:0,shot:{made:true},note:'2 returns the pass for the layup.'}]}),
  mk({id:'pre-back',name:'Backdoor Cut',cat:'Offense',ball:0,defense:true,desc:'When the defender denies the wing pass, cut behind them to the rim.',
   start:[S(250,380),S(420,280),S(80,280),S(160,180),S(340,180)],
   steps:[{moves:{0:M(310,350,'drib'),1:M(445,345)},note:'1 dribbles over. 2 drifts out like they want the ball.'},
@@ -122,12 +140,12 @@ const PRESETS=[
   start:[S(250,370),S(430,290),S(70,290),S(170,200),S(330,200)],
   steps:[{moves:{0:M(270,235,'drib'),1:M(445,215),2:M(55,215)},note:'1 drives the middle. Wings lift to the corners.'},
    {moves:{0:M(255,140,'drib')},note:'Defenders collapse on the drive.'},
-   {moves:{},pass:1,note:'1 kicks it out to the open corner shooter.'}]}),
+   {moves:{},pass:1,shot:{made:true},note:'1 kicks it out and the corner shooter knocks it down.'}]}),
  mk({id:'pre-horns',name:'Pick & Pop',cat:'Offense',ball:0,defense:true,desc:'Horns set: two bigs at the elbows. One screens, then pops out for the jumper.',
   start:[S(250,365),S(430,275),S(70,275),S(185,210),S(315,210)],
   steps:[{moves:{3:M(285,315,'scr')},note:'4 steps out and screens for the ball handler.'},
    {moves:{0:M(350,285,'drib'),3:M(330,345)},note:'1 uses the screen. 4 pops out for the shot.'},
-   {moves:{},pass:3,note:'1 passes back to 4 for the open jumper.'}]}),
+   {moves:{},pass:3,shot:{made:false},note:'4 gets the open jumper but misses. Bigs crash for the rebound.'}]}),
  mk({id:'pre-blob',name:'Box Inbound',cat:'Out of bounds',ball:0,defense:true,desc:'Baseline out of bounds. Four players in a box under the rim; screens free a shooter.',
   start:[S(150,24),S(205,75),S(295,75),S(205,170),S(295,170)],
   steps:[{moves:{3:M(205,105,'scr'),4:M(295,105,'scr')},note:'The two players on the bottom set screens for the top players.'},
@@ -142,7 +160,7 @@ const PRESETS=[
   start:[S(250,680),S(400,760),S(100,760),S(250,820),S(250,880)],
   steps:[{moves:{0:M(250,430,'drib'),1:M(440,420),2:M(60,420),3:M(250,590)},note:'Ball handler pushes up the middle, wings run the lanes.',dur:2.4},
    {moves:{0:M(250,230,'drib'),1:M(415,170),2:M(85,170),3:M(250,420)},note:'Keep spacing. Stay three wide.',dur:2.4},
-   {moves:{1:M(385,90)},pass:1,note:'Dump to the wing for the layup or the open three.'}]}),
+   {moves:{1:M(385,90)},pass:1,shot:{made:true},note:'Dump to the wing for the layup.'}]}),
  mk({id:'pre-press',name:'Press Break',cat:'Press break',court:'full',ball:0,desc:'Beat a 1-2-2 full-court press with a middle flash and quick passing.',
   start:[S(250,918),S(160,800),S(340,800),S(170,640),S(330,560)],
   steps:[{moves:{2:M(250,690)},pass:1,note:'Inbound to the near guard while 3 flashes to the middle.'},
@@ -161,25 +179,45 @@ function courtSvg(full,courtKey){
 <line x1="222" y1="40" x2="278" y2="40" stroke="${c.line}" stroke-width="4" stroke-linecap="round"/><circle cx="250" cy="52" r="8.5" fill="none" stroke="${c.rim}" stroke-width="3"/>`;
   return `<rect width="500" height="${H}" fill="${c.bg}"/>${planks}${half}${full?`<g transform="rotate(180 250 470)">${half}</g><line x1="0" y1="470" x2="500" y2="470" ${L}/>`:''}`;
 }
-function defs(){const c=cp(),m=(id,col)=>`<marker id="${id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 1L10 5L0 9z" fill="${col}"/></marker>`;return `<defs>${m('mo',c.ink)}${m('md',c.def)}${m('mp',c.ink)}<filter id="psh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity=".35"/></filter></defs>`}
-const labelFor=k=>{const r=store.team.roster[k]||{};return store.settings.labels==='jersey'?(r.n||String(k+1)):String(k+1)};
+function defs(){const c=cp(),m=(id,col)=>`<marker id="${id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 1L10 5L0 9z" fill="${col}"/></marker>`;return `<defs>${m('mo',c.ink)}${m('md',defC())}${m('mp',c.ink)}<filter id="psh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity=".35"/></filter></defs>`}
 const ACC='#ff6a1a';
-function pl(p,i,o={}){
-  const c=cp(),d=i>=5,k=i%5,r=o.r||21,lab=labelFor(k);
-  const tr=`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`,op=o.op!=null?`opacity="${o.op}"`:'';
-  const fs=lab.length<2?r*.92:lab.length<3?r*.78:r*.6;
-  const nm=store.settings.labels==='name'&&!o.noname&&store.team.roster[k]?.name?`<text y="${r+17}" text-anchor="middle" font-size="${r*.66}" font-weight="600" fill="${c.ink}" style="paint-order:stroke;stroke:${c.bg};stroke-width:4px;pointer-events:none">${esc(store.team.roster[k].name.slice(0,10))}</text>`:'';
-  if(o.ghost){
-    const col=d?c.def:ACC;
-    return `<g class="player" data-i="${i}" transform="${tr}" ${op}><circle r="${r}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="4 4"/><text y="${fs*.36}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="${col}" style="pointer-events:none">${esc(lab)}</text></g>`;
-  }
-  if(d)return `<g class="player" data-i="${i}" transform="${tr}" ${op}><circle r="${r-1}" fill="${c.deff}" stroke="${c.def}" stroke-width="2.2"/><text y="${fs*.36}" text-anchor="middle" font-size="${fs*.9}" font-weight="600" fill="${c.def}" style="pointer-events:none">${esc(lab)}</text>${nm}</g>`;
-  return `<g class="player" data-i="${i}" transform="${tr}" ${op}><circle r="${r}" fill="${ACC}" ${o.flat?'':'filter="url(#psh)"'}/><circle r="${r-1}" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/><text y="${fs*.36}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#fff" style="pointer-events:none">${esc(lab)}</text>${nm}</g>`;
+const offC=()=>store.settings.offColor||ACC;
+const defC=()=>{const v=store.settings.defColor;return v&&v!=='auto'?v:cp().def};
+const lum=hex=>{const h=String(hex).replace('#','');if(h.length!==6)return .5;return (.299*parseInt(h.slice(0,2),16)+.587*parseInt(h.slice(2,4),16)+.114*parseInt(h.slice(4,6),16))/255};
+const onColor=hex=>lum(hex)>.68?'#141414':'#ffffff';
+const rosterOf=def=>(def?store.team.defRoster:store.team.roster)||[];
+const labelFor=(k,def)=>{const r=rosterOf(def)[k]||{};return store.settings.labels==='jersey'?(r.n||String(k+1)):String(k+1)};
+const nameFor=(k,def)=>store.settings.labels==='name'?String(rosterOf(def)[k]?.name||'').slice(0,10):'';
+// one shape definition shared by the SVG views and the video renderer
+function shapeD(st,r){
+  if(st==='square'){const s=r*.9,q=r*.3;return `M${-s+q} ${-s}H${s-q}Q${s} ${-s} ${s} ${-s+q}V${s-q}Q${s} ${s} ${s-q} ${s}H${-s+q}Q${-s} ${s} ${-s} ${s-q}V${-s+q}Q${-s} ${-s} ${-s+q} ${-s}Z`}
+  if(st==='triangle')return `M0 ${-r*1.08}L${r*1.02} ${r*.78}H${-r*1.02}Z`;
+  if(st==='x'){const q=r*.62;return `M${-q} ${-q}L${q} ${q}M${q} ${-q}L${-q} ${q}`}
+  return `M${-r} 0A${r} ${r} 0 1 0 ${r} 0A${r} ${r} 0 1 0 ${-r} 0Z`;
 }
-const ballSvg=b=>`<g transform="translate(${b.x.toFixed(1)} ${b.y.toFixed(1)})" style="pointer-events:none"><circle r="10" fill="#e8742a" stroke="#2a1405" stroke-width="1.4"/><path d="M-10 0H10M0 -10V10M-7 -7Q-2 0 -7 7M7 -7Q2 0 7 7" fill="none" stroke="#2a1405" stroke-width="1.2"/></g>`;
+function pl(p,i,o={}){
+  const c=cp(),d=i>=5,k=i%5,r=o.r||21,lab=labelFor(k,d),oc=offC(),dc=defC(),ds=store.settings.defStyle||'circle';
+  const tr=`translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`,op=o.op!=null?`opacity="${o.op}"`:'';
+  const fs=lab.length<2?r*.92:lab.length<3?r*.78:r*.6,ty=fs*.36+(d&&ds==='triangle'?r*.18:0);
+  const n=!o.noname&&nameFor(k,d);
+  const nm=n?`<text y="${r+17}" text-anchor="middle" font-size="${r*.66}" font-weight="600" fill="${c.ink}" style="paint-order:stroke;stroke:${c.bg};stroke-width:4px;pointer-events:none">${esc(n)}</text>`:'';
+  const txt=(col,size,w=700,y=ty)=>`<text y="${y}" text-anchor="middle" font-size="${size}" font-weight="${w}" fill="${col}" style="pointer-events:none">${esc(lab)}</text>`;
+  const g=inner=>`<g class="player" data-i="${i}" transform="${tr}" ${op}>${inner}</g>`;
+  if(d){
+    const col=dc,q=r*.62;
+    if(ds==='x')return g(`<circle r="${r}" fill="transparent"/><path d="${shapeD('x',r)}" stroke="${col}" stroke-width="${o.ghost?3.5:5}" stroke-linecap="round" ${o.ghost?'stroke-dasharray="2 6"':''}/><text x="${q+3}" y="${-q+2}" font-size="${r*.62}" font-weight="700" fill="${col}" style="pointer-events:none">${esc(lab)}</text>${o.ghost?'':nm}`);
+    const shape=ds==='solid'?'circle':ds;
+    if(o.ghost)return g(`<path d="${shapeD(shape,r)}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="4 4"/>${txt(col,fs)}`);
+    if(ds==='solid')return g(`<path d="${shapeD('circle',r-1)}" fill="${col}"/>${txt(onColor(col),fs)}${nm}`);
+    return g(`<path d="${shapeD(shape,r-1)}" fill="${c.deff}" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>${txt(col,fs*.9,600)}${nm}`);
+  }
+  if(o.ghost)return g(`<circle r="${r}" fill="none" stroke="${oc}" stroke-width="2" stroke-dasharray="4 4"/>${txt(oc,fs)}`);
+  return g(`<circle r="${r}" fill="${oc}" ${o.flat?'':'filter="url(#psh)"'}/><circle r="${r-1}" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>${txt(onColor(oc),fs)}${nm}`);
+}
+const ballSvg=(b,r=1,op=1)=>`<g transform="translate(${b.x.toFixed(1)} ${b.y.toFixed(1)}) scale(${r.toFixed(3)})" opacity="${op.toFixed(2)}" style="pointer-events:none"><circle r="10" fill="#e8742a" stroke="#2a1405" stroke-width="1.4"/><path d="M-10 0H10M0 -10V10M-7 -7Q-2 0 -7 7M7 -7Q2 0 7 7" fill="none" stroke="#2a1405" stroke-width="1.2"/></g>`;
 function moveSvg(a,b,t,def,o={}){
   const u=unit(a,b);if(u.d<34)return'';
-  const c=cp(),col=def?c.def:c.ink,mk=def?'md':'mo',op=o.op??(def?.8:.92),w=o.w||(def?2.2:2.8);
+  const c=cp(),col=def?defC():c.ink,mk=def?'md':'mo',op=o.op??(def?.8:.92),w=o.w||(def?2.2:2.8);
   const s={x:a.x+u.x*25,y:a.y+u.y*25},e={x:b.x-u.x*(t==='scr'?2:o.pad??14),y:b.y-u.y*(t==='scr'?2:o.pad??14)};
   if(t==='drib'){
     const n=Math.max(2,Math.floor(Math.hypot(e.x-s.x,e.y-s.y)/12)),px=-u.y,py=u.x;let d=`M${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
@@ -197,7 +235,19 @@ function stepArrows(pl,k,showD,o={}){
   let s='';const a=posAt(pl,k),st=pl.steps[k];
   for(const i in st.moves){if(!showD&&+i>=5)continue;s+=moveSvg(a[i],st.moves[i],st.moves[i].t,+i>=5,o)}
   if(st.pass!=null){const h=holderAt(pl,k),e=endPos(pl,k);s+=passSvg(a[h],e[st.pass],o.op==null?.9:o.op)}
+  if(st.shot)s+=shotSvg(endPos(pl,k)[shooterAt(pl,k)],st.shot.made,o.op==null?.9:o.op);
   return s;
+}
+function shotSvg(p,made,op=.9){
+  const u=unit(p,RIM);if(u.d<40)return'';
+  const a={x:p.x+u.x*24,y:p.y+u.y*24},c=shotCtrl(a),b={x:RIM.x-u.x*12,y:RIM.y-u.y*12},col=made?'#34c759':'#ff3b30';
+  const mark=made?`<path d="M-5 0l3.5 3.5L5-4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`:`<path d="M-4-4l8 8M4-4l-8 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`;
+  const mx=.25*a.x+.5*c.x+.25*b.x,my=.25*a.y+.5*c.y+.25*b.y;
+  return `<g opacity="${op}" style="pointer-events:none"><path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)}Q${c.x.toFixed(1)} ${c.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="2.6" stroke-dasharray="1 6" stroke-linecap="round"/><g transform="translate(${mx.toFixed(1)} ${my.toFixed(1)})"><circle r="10" fill="${col}"/>${mark}</g></g>`;
+}
+function shotBadge(fx){
+  const col=fx.made?'#34c759':'#ff3b30',o=Math.min(1,fx.k*3),s=.8+.2*Math.min(1,fx.k*3);
+  return `<g transform="translate(338 34) scale(${s.toFixed(2)})" opacity="${o.toFixed(2)}" style="pointer-events:none"><rect x="-40" y="-15" width="80" height="30" rx="15" fill="${col}"/><text y="5.5" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" letter-spacing="1">${fx.made?'MAKE':'MISS'}</text></g>`;
 }
 function thumb(p){
   const full=p.court==='full',H=hOf(p);let s='';
@@ -301,7 +351,7 @@ function playMenu(p,fromViewer){
   const row=(a,i,l,cls='')=>`<button class="li ${cls}" data-a="${a}">${ic(i,21)}<span class="tx">${l}</span></button>`;
   const el=sheet(`<h3>${esc(p.name)}</h3><p class="d">${p.kind==='mine'?'Your play':'Preset'} · ${plural(p.steps.length,'step')}</p>
    <div class="list">${fromViewer?'':row('open','play','Watch')}${row('fav','heart',f?'Remove from favorites':'Add to favorites')}${c&&p.kind==='mine'?row('edit','edit','Edit'):''}${c?row('dup','copy',p.kind==='mine'?'Duplicate':'Make a copy to edit'):''}</div>
-   <div class="list">${amCoach()?row('team','users','Add to '+esc(curTeam().name)):''}${row('share','share','Share link')}${row('img','image','Save as image')}</div>
+   <div class="list">${amCoach()?row('team','users','Add to '+esc(curTeam().name)):''}${row('share','share','Share link')}${row('vid','video','Export video')}${row('img','image','Save as image')}</div>
    ${c&&p.kind==='mine'?`<div class="list">${row('del','trash','Delete play','danger')}</div>`:''}`);
   $$('[data-a]',el).forEach(b=>b.onclick=()=>{const a=b.dataset.a;closeSheet();
     if(a==='open')nav('viewer',{play:p});
@@ -310,6 +360,7 @@ function playMenu(p,fromViewer){
     if(a==='dup')dupPlay(p);
     if(a==='share')sharePlay(p);
     if(a==='img')exportPng(p);
+    if(a==='vid')exportVideo(p);
     if(a==='team')CL.savePlay(curTeam().id,{...normalize(p),id:null,authorName:C.profile.name}).then(()=>toast('Added to '+curTeam().name),()=>toast('Couldn’t add the play'));
     if(a==='del')confirmSheet({title:'Delete this play?',msg:'This can’t be undone.',ok:'Delete',danger:true,onOk:()=>{store.plays=store.plays.filter(x=>x.id!==p.id);store.favs=store.favs.filter(x=>x!==p.id);save();toast('Deleted');R.name==='viewer'?leave({name:'lib'}):libScreen()}});
   });
@@ -380,7 +431,7 @@ function viewerScreen(){
     paths.innerHTML=stepArrows(play,k,showD);
     let s='';if(showD)for(let i=5;i<st.pos.length;i++)s+=pl(st.pos[i],i);
     for(let i=0;i<5;i++)s+=pl(st.pos[i],i);
-    dyn.innerHTML=s+ballSvg(st.ball);
+    dyn.innerHTML=s+ballSvg(st.ball,st.br,st.bo)+(st.fx?shotBadge(st.fx):'');
     note.innerHTML=`<small>Step ${k+1} of ${N}</small><p>${esc(n.note||'Watch how everyone moves.')}</p>`;
     badge.textContent=T>=N?'Done':`${k+1} / ${N}`;
     $$('#segs b').forEach((b,i)=>{b.style.width=(Math.max(0,Math.min(1,T-i))*100)+'%'});
@@ -438,6 +489,98 @@ function sharePlay(p){
   const el=sheet(`<h3>Share link</h3><p class="d">Anyone with this link can watch the play and save a copy.</p><input class="field" id="lk" readonly value="${esc(url)}"><div style="margin-top:12px"><button class="btn solid" id="cp" style="width:100%">Copy link</button></div>`);
   $('#lk',el).onfocus=e=>e.target.select();
   $('#cp',el).onclick=()=>{(navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{toast('Link copied');closeSheet()},()=>{$('#lk',el).select();toast('Press Ctrl/Cmd+C')})};
+}
+/* ---- video export: replays the play on a canvas and records it ---- */
+const FNT='-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif';
+const loadImg=svg=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+function cvPlayer(g,p,i){
+  const c=cp(),d=i>=5,k=i%5,r=21,lab=labelFor(k,d),fs=lab.length<2?r*.92:lab.length<3?r*.78:r*.6,ds=store.settings.defStyle||'circle',n=nameFor(k,d);
+  g.save();g.translate(p.x,p.y);g.textAlign='center';g.textBaseline='middle';
+  if(!d){
+    const oc=offC();g.shadowColor='rgba(0,0,0,.35)';g.shadowBlur=5;g.shadowOffsetY=2;g.fillStyle=oc;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();
+    g.shadowColor='transparent';g.fillStyle=onColor(oc);g.font=`700 ${fs}px ${FNT}`;g.fillText(lab,0,1);
+  }else{
+    const col=defC();g.strokeStyle=col;g.lineJoin='round';
+    if(ds==='x'){const q=r*.62;g.lineWidth=5;g.lineCap='round';g.stroke(new Path2D(shapeD('x',r)));g.fillStyle=col;g.font=`700 ${r*.62}px ${FNT}`;g.textAlign='left';g.fillText(lab,q+3,-q-2)}
+    else if(ds==='solid'){g.fillStyle=col;g.fill(new Path2D(shapeD('circle',r-1)));g.fillStyle=onColor(col);g.font=`700 ${fs}px ${FNT}`;g.fillText(lab,0,1)}
+    else{const P=new Path2D(shapeD(ds,r-1));g.fillStyle=c.deff;g.fill(P);g.lineWidth=2.2;g.stroke(P);g.fillStyle=col;g.font=`600 ${fs*.9}px ${FNT}`;g.fillText(lab,0,1+(ds==='triangle'?r*.18:0))}
+  }
+  if(n){g.textAlign='center';g.font=`600 ${r*.66}px ${FNT}`;g.lineWidth=4;g.strokeStyle=c.bg;g.strokeText(n,0,r+12);g.fillStyle=c.ink;g.fillText(n,0,r+12)}
+  g.restore();
+}
+function cvBall(g,b,r,op){
+  g.save();g.globalAlpha=op;g.translate(b.x,b.y);g.scale(r,r);
+  g.beginPath();g.arc(0,0,10,0,Math.PI*2);g.fillStyle='#e8742a';g.fill();g.lineWidth=1.4;g.strokeStyle='#2a1405';g.stroke();
+  g.lineWidth=1.2;g.stroke(new Path2D('M-10 0H10M0 -10V10M-7 -7Q-2 0 -7 7M7 -7Q2 0 7 7'));g.restore();
+}
+function cvBadge(g,fx){
+  const o=Math.min(1,fx.k*3),s=.8+.2*o;
+  g.save();g.globalAlpha=o;g.translate(338,34);g.scale(s,s);g.fillStyle=fx.made?'#34c759':'#ff3b30';
+  g.beginPath();g.moveTo(-25,-15);g.arcTo(40,-15,40,15,15);g.arcTo(40,15,-40,15,15);g.arcTo(-40,15,-40,-15,15);g.arcTo(-40,-15,40,-15,15);g.closePath();g.fill();
+  g.fillStyle='#fff';g.font=`800 15px ${FNT}`;g.textAlign='center';g.textBaseline='middle';g.fillText(fx.made?'MAKE':'MISS',0,1);g.restore();
+}
+function wrapText(g,text,x,y,maxW,lh,lines){
+  const words=String(text).split(/\s+/);let line='',n=0;
+  for(let i=0;i<words.length;i++){
+    const test=line?line+' '+words[i]:words[i];
+    if(g.measureText(test).width>maxW&&line){
+      if(n===lines-1){while(g.measureText(line+'…').width>maxW&&line)line=line.slice(0,-1);g.fillText(line+'…',x,y+n*lh);return}
+      g.fillText(line,x,y+n*lh);n++;line=words[i];
+    }else line=test;
+  }
+  if(line)g.fillText(line,x,y+n*lh);
+}
+function drawVideoFrame(g,p,T,bgs,L){
+  const N=p.steps.length,st=stateAt(p,T),k=st.step;
+  g.fillStyle='#0b0b0c';g.fillRect(0,0,L.W,L.VH);
+  g.textAlign='left';g.textBaseline='alphabetic';
+  g.fillStyle='#fff';g.font=`700 40px ${FNT}`;wrapText(g,p.name||'Play',32,66,L.W-64,46,1);
+  g.fillStyle='rgba(255,255,255,.55)';g.font=`500 24px ${FNT}`;g.fillText(`${store.team.name} · ${plural(N,'step')}`,32,102);
+  g.drawImage(bgs[k],0,L.TOP,L.W,L.CH);
+  g.save();g.translate(0,L.TOP);g.scale(L.sc,L.sc);
+  if(L.showD)for(let i=5;i<st.pos.length;i++)cvPlayer(g,st.pos[i],i);
+  for(let i=0;i<5;i++)cvPlayer(g,st.pos[i],i);
+  cvBall(g,st.ball,st.br,st.bo);if(st.fx)cvBadge(g,st.fx);
+  g.restore();
+  const y=L.TOP+L.CH+48;
+  g.fillStyle=offC()==='#18181b'?'#fff':offC();g.font=`700 22px ${FNT}`;g.fillText(`Step ${k+1} of ${N}`,32,y);
+  g.fillStyle='#fff';g.font=`600 30px ${FNT}`;wrapText(g,p.steps[k].note||'',32,y+44,L.W-64,40,2);
+  const gap=8,sw=(L.W-64-(N-1)*gap)/N;
+  for(let i=0;i<N;i++){const x=32+i*(sw+gap),yy=L.VH-34;g.fillStyle='rgba(255,255,255,.18)';g.fillRect(x,yy,sw,6);g.fillStyle='#fff';g.fillRect(x,yy,sw*Math.max(0,Math.min(1,T-i)),6)}
+}
+async function exportVideo(p){
+  const canRecord=window.MediaRecorder&&HTMLCanvasElement.prototype.captureStream;
+  const mime=canRecord&&['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>{try{return MediaRecorder.isTypeSupported(t)}catch(e){return false}});
+  if(!mime)return toast('This browser can’t record video');
+  const full=p.court==='full',H=hOf(p),N=p.steps.length,showD=p.start.length>5;
+  const W=720,sc=W/500,CH=Math.round(H*sc),TOP=130,VH=(CH+TOP+200)&~1,L={W,sc,TOP,CH,VH,showD};
+  let cancelled=false;
+  const el=sheet(`<h3>Making video</h3><p class="d" id="vst">Getting ready…</p><div class="vbar"><i id="vpr"></i></div><p class="d" style="margin-top:12px">Keep this screen open while it records.</p><button class="btn ghost" id="vcx" style="width:100%">Cancel</button>`);
+  $('#vcx',el).onclick=()=>{cancelled=true;closeSheet()};
+  try{
+    const bgs=await Promise.all(p.steps.map((_,k)=>loadImg(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${CH}" viewBox="0 0 500 ${H}">${defs()}${courtSvg(full)}${stepArrows(p,k,showD)}</svg>`)));
+    if(cancelled)return;
+    const cv=document.createElement('canvas');cv.width=W;cv.height=VH;const g=cv.getContext('2d');
+    drawVideoFrame(g,p,0,bgs,L);
+    const stream=cv.captureStream(30),rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5e6}),chunks=[];
+    rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    const stopped=new Promise(r=>rec.onstop=r);
+    const lead=.8,tail=1.6,durs=p.steps.map(s=>s.dur||1.9),total=lead+durs.reduce((a,b)=>a+b,0)+tail;
+    const tAt=sec=>{let x=sec-lead;if(x<=0)return 0;for(let k=0;k<N;k++){if(x<durs[k])return k+x/durs[k];x-=durs[k]}return N};
+    rec.start(250);const t0=performance.now();
+    await new Promise(res=>{const loop=()=>{
+      if(cancelled)return res();
+      const sec=(performance.now()-t0)/1000;drawVideoFrame(g,p,tAt(sec),bgs,L);
+      const pr=Math.min(1,sec/total),bar=$('#vpr'),st=$('#vst');if(bar)bar.style.width=(pr*100)+'%';if(st)st.textContent=`Recording… ${Math.round(pr*100)}%`;
+      if(sec>=total)return res();requestAnimationFrame(loop)};requestAnimationFrame(loop)});
+    rec.stop();await stopped;stream.getTracks().forEach(t=>t.stop());
+    if(cancelled)return;
+    const type=mime.split(';')[0],ext=type.includes('mp4')?'mp4':'webm',blob=new Blob(chunks,{type});
+    const name=(p.name||'play').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'')+'.'+ext,file=new File([blob],name,{type});
+    const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+    const s2=sheet(`<h3>Video ready</h3><p class="d">${esc(p.name||'Play')} · ${Math.round(total)} seconds</p><video class="vprev" src="${URL.createObjectURL(blob)}" controls playsinline muted autoplay loop></video><button class="btn solid" id="vsave" style="width:100%;margin-top:12px">${ic(canShare?'share':'download',18)}${canShare?'Share or save video':'Download video'}</button>`);
+    $('#vsave',s2).onclick=()=>{if(canShare)navigator.share({files:[file],title:p.name}).catch(()=>{});else{download(name,blob);toast('Video saved')}};
+  }catch(e){console.warn(e);closeSheet();toast('Couldn’t make the video')}
 }
 async function exportPng(p){
   try{
@@ -544,7 +687,10 @@ function editorScreen(){
     if(cur<0){el.innerHTML='';return}
     const st=d.steps[cur];
     el.innerHTML=`<div class="group"><input class="in" id="nt" placeholder="Add a note for this step" maxlength="160" value="${esc(st.note)}">
-     <div class="row"><button id="sl" class="narrow" aria-label="Move step earlier" ${cur===0?'disabled':''}>${ic('back',18,{sw:2.2})}</button><button id="sr" class="narrow" aria-label="Move step later" ${cur===d.steps.length-1?'disabled':''}>${ic('chev',18,{sw:2.2})}</button><button id="sdup">${ic('copy',17)}Duplicate</button><button id="sclr">${ic('clear',17)}Clear</button><button id="sdel" class="danger" ${d.steps.length<2?'disabled':''}>${ic('trash',17)}Delete</button></div></div>`;
+     <div class="row"><button id="sl" class="narrow" aria-label="Move step earlier" ${cur===0?'disabled':''}>${ic('back',18,{sw:2.2})}</button><button id="sr" class="narrow" aria-label="Move step later" ${cur===d.steps.length-1?'disabled':''}>${ic('chev',18,{sw:2.2})}</button><button id="sdup">${ic('copy',17)}Duplicate</button><button id="sclr">${ic('clear',17)}Clear</button><button id="sdel" class="danger" ${d.steps.length<2?'disabled':''}>${ic('trash',17)}Delete</button></div></div>
+     <div class="group shotbox"><div class="shothead"><span class="tx"><b>Shot</b><small>${st.shot?`${labelFor(shooterAt(d,cur))} shoots at the end of this step`:'The player with the ball shoots at the end of this step'}</small></span></div>
+      <div class="shotbtns"><button data-shot="none" class="${st.shot?'':'on'}">No shot</button><button data-shot="make" class="make ${st.shot&&st.shot.made?'on':''}">${ic('check',17,{sw:2.6})}Make</button><button data-shot="miss" class="miss ${st.shot&&!st.shot.made?'on':''}">${ic('x',17,{sw:2.6})}Miss</button></div></div>`;
+    $$('[data-shot]',el).forEach(b=>b.onclick=()=>{snap();const v=b.dataset.shot;st.shot=v==='none'?null:{made:v==='make'};refresh()});
     $('#nt').oninput=e=>{d.steps[cur].note=e.target.value;dirty=true;keepDraft()};
     $('#nt').onfocus=()=>{undo.push(clone(d));redo=[]};
     $('#sl').onclick=()=>moveStep(cur,cur-1);$('#sr').onclick=()=>moveStep(cur,cur+1);
@@ -778,7 +924,7 @@ function teamMenu(){
   const t=curTeam(),coachMe=amCoach();
   const el=sheet(`<h3>${esc(t.name)}</h3><p class="d">Signed in as ${esc(C.profile.name)}</p>
    ${C.teams.length>1?`<div class="list">${C.teams.map(x=>`<button class="li" data-team="${x.id}"><span class="tx">${esc(x.name)}<small>${x.coachUid===C.user.uid?'Coach':'Player'}</small></span>${x.id===t.id?ic('check',18,{sw:2.4}):''}</button>`).join('')}</div>`:''}
-   <div class="list"><button class="li" id="jt">${ic('users',20)}<span class="tx">Join another team</span></button><button class="li" id="ct">${ic('plus',20)}<span class="tx">Create a team</span></button><button class="li" id="ep">${ic('edit',20)}<span class="tx">Edit my profile</span></button><button class="li" id="lu">${ic('grid',20)}<span class="tx">Court labels and roster</span></button></div>
+   <div class="list"><button class="li" id="jt">${ic('users',20)}<span class="tx">Join another team</span></button><button class="li" id="ct">${ic('plus',20)}<span class="tx">Create a team</span></button><button class="li" id="ep">${ic('edit',20)}<span class="tx">Edit my profile</span></button><button class="li" id="lu">${ic('grid',20)}<span class="tx">Player names</span></button></div>
    <div class="list">${coachMe?'':`<button class="li danger" id="lv">${ic('x',20)}<span class="tx">Leave team</span></button>`}<button class="li danger" id="so">${ic('back',20)}<span class="tx">Sign out</span></button></div>`);
   $$('[data-team]',el).forEach(b=>b.onclick=()=>{closeSheet();selectTeam(b.dataset.team)});
   $('#jt',el).onclick=()=>{const s=sheet(`<h3>Join a team</h3><p class="d">Enter the code from your coach.</p><div class="coderow"><input id="jc" class="codein" maxlength="6" placeholder="ABC123" autocapitalize="characters"><button class="pill-btn" id="jgo">Join</button></div>`);$('#jgo',s).onclick=()=>{const v=$('#jc',s).value;closeSheet();joinCode(v)}};
@@ -788,15 +934,18 @@ function teamMenu(){
   const lv=$('#lv',el);if(lv)lv.onclick=()=>confirmSheet({title:`Leave ${t.name}?`,msg:'You can rejoin later with the team code.',ok:'Leave team',danger:true,onOk:()=>CL.removeMember(t.id,C.user.uid).then(()=>toast('You left the team'),()=>toast('Couldn’t leave'))});
   $('#so',el).onclick=()=>{closeSheet();CL.signOut()};
 }
-function rosterSheet(){
-  const t=store.team,s=store.settings;
-  const el=sheet(`<h3>Court labels</h3><p class="d">Choose what shows on each player.</p>
-   <div class="seg full" style="margin-bottom:16px">${[['num','1–5'],['jersey','Jersey #'],['name','Name']].map(([k,l])=>`<button data-l="${k}" class="${s.labels===k?'on':''}">${l}</button>`).join('')}</div>
-   <div class="list">${t.roster.map((r,i)=>`<div class="li"><span class="num">${i+1}</span><input data-r="${i}" data-k="name" maxlength="14" placeholder="Player name" value="${esc(r.name)}" style="flex:1"><input class="jersey" data-r="${i}" data-k="n" inputmode="numeric" maxlength="3" placeholder="#" value="${esc(r.n)}"></div>`).join('')}</div>
+function rosterSheet(side){
+  side=side==='def'?'def':'off';
+  const s=store.settings,ro=rosterOf(side==='def');
+  const el=sheet(`<h3>Player names</h3><p class="d">Names show under each player when labels are set to Names. Jersey numbers show when labels are set to Jersey #.</p>
+   <div class="seg full" style="margin-bottom:14px"><button data-side="off" class="${side==='off'?'on':''}">Offense</button><button data-side="def" class="${side==='def'?'on':''}">Defense</button></div>
+   <div class="list">${ro.map((r,i)=>`<div class="li"><span class="num" style="background:${side==='def'?defC():offC()};color:${onColor(side==='def'?defC():offC())}">${i+1}</span><input data-r="${i}" data-k="name" maxlength="14" placeholder="${side==='def'?'Defender':'Player'} ${i+1} name" value="${esc(r.name)}" style="flex:1"><input class="jersey" data-r="${i}" data-k="n" inputmode="numeric" maxlength="3" placeholder="#" value="${esc(r.n)}"></div>`).join('')}</div>
+   ${s.labels==='num'?`<div class="list"><button class="li" id="showN">${ic('eye',20)}<span class="tx">Show names on the court</span>${ic('chev',18)}</button></div>`:''}
    <button class="btn solid" id="rd" style="width:100%">Done</button>`);
-  $$('[data-l]',el).forEach(b=>b.onclick=()=>{s.labels=b.dataset.l;save();$$('[data-l]',el).forEach(x=>x.classList.toggle('on',x===b))});
-  $$('[data-r]',el).forEach(i=>i.oninput=()=>{t.roster[+i.dataset.r][i.dataset.k]=i.value;save()});
-  $('#rd',el).onclick=()=>{closeSheet();if(R.name==='team')teamScreen()};
+  $$('[data-side]',el).forEach(b=>b.onclick=()=>rosterSheet(b.dataset.side));
+  $$('[data-r]',el).forEach(i=>i.oninput=()=>{ro[+i.dataset.r][i.dataset.k]=i.value;save()});
+  const sn=$('#showN',el);if(sn)sn.onclick=()=>{s.labels='name';save();toast('Names will show on the court');sn.parentElement.remove()};
+  $('#rd',el).onclick=()=>{closeSheet();if(R.name==='team')teamScreen();else if(R.name==='set')setScreen();else if(R.name==='lib')libScreen()};
 }
 function submitVersion(teamId,v){
   CL.updateVersion(teamId,v.id,{status:'submitted',submittedAt:Date.now()}).then(()=>{toast('Sent to your coach');teamUI.seg='subs';if(R.name==='viewer')leave({name:'team'})},()=>toast('Couldn’t submit. Try again.'));
@@ -809,9 +958,9 @@ function feedbackSheet(teamId,v){
 }
 function teamPlayMenu(p){
   const coachMe=amCoach();
-  const el=sheet(`<h3>${esc(p.name)}</h3><p class="d">Team play</p><div class="list"><button class="li" data-a="share">${ic('share',21)}<span class="tx">Share link</span></button><button class="li" data-a="img">${ic('image',21)}<span class="tx">Save as image</span></button>${coachMe?`<button class="li" data-a="copy">${ic('copy',21)}<span class="tx">Copy to my plays</span></button>`:''}</div>${coachMe?`<div class="list"><button class="li danger" data-a="del">${ic('trash',21)}<span class="tx">Remove from team</span></button></div>`:''}`);
+  const el=sheet(`<h3>${esc(p.name)}</h3><p class="d">Team play</p><div class="list"><button class="li" data-a="share">${ic('share',21)}<span class="tx">Share link</span></button><button class="li" data-a="vid">${ic('video',21)}<span class="tx">Export video</span></button><button class="li" data-a="img">${ic('image',21)}<span class="tx">Save as image</span></button>${coachMe?`<button class="li" data-a="copy">${ic('copy',21)}<span class="tx">Copy to my plays</span></button>`:''}</div>${coachMe?`<div class="list"><button class="li danger" data-a="del">${ic('trash',21)}<span class="tx">Remove from team</span></button></div>`:''}`);
   $$('[data-a]',el).forEach(b=>b.onclick=()=>{const a=b.dataset.a;closeSheet();
-    if(a==='share')sharePlay(p);if(a==='img')exportPng(p);
+    if(a==='share')sharePlay(p);if(a==='img')exportPng(p);if(a==='vid')exportVideo(p);
     if(a==='copy'){const c=normalize(p);c.id=uid();c.created=c.updated=Date.now();store.plays.unshift(c);save();toast('Copied to My plays')}
     if(a==='del')confirmSheet({title:'Remove this play?',msg:'It will be removed for everyone on the team. Player versions stay.',ok:'Remove',danger:true,onOk:()=>CL.deletePlay(R.teamId,p.id).then(()=>{toast('Removed');leave({name:'team'})},()=>toast('Couldn’t remove'))});
   });
@@ -844,6 +993,10 @@ function installSheet(fromJoin){
 }
 
 /* ============ settings ============ */
+const OFF_COLORS=['#ff6a1a','#ef4444','#f5b300','#22c55e','#0ea5e9','#6366f1','#a855f7','#ec4899','#f5f5f7','#18181b'];
+const DEF_STYLES=[['circle','Outline'],['solid','Solid'],['x','X'],['square','Square'],['triangle','Triangle']];
+const swatch=(key,c)=>{const cur=store.settings[key]||(key==='defColor'?'auto':ACC);return `<button class="swatch ${cur===c?'on':''}" data-set="${key}" data-val="${c}" aria-label="${c==='auto'?'Match court':c}" style="background:${c==='auto'?'conic-gradient(#8e8e93 0 50%,#d1d1d6 0)':c}"></button>`};
+function withStyle(st,fn){const prev=store.settings.defStyle;store.settings.defStyle=st;try{return fn()}finally{store.settings.defStyle=prev}}
 function setScreen(){
   const s=store.settings;
   const seg=(k,opts)=>`<div class="seg full">${opts.map(([v,l])=>`<button data-set="${k}" data-val="${v}" class="${s[k]===v?'on':''}">${l}</button>`).join('')}</div>`;
@@ -854,6 +1007,15 @@ function setScreen(){
    <div class="gl">Appearance</div>${seg('theme',[['system','Automatic'],['light','Light'],['dark','Dark']])}
    <div class="gl">Court</div>
    <div class="courts">${Object.entries(COURTS).map(([k,c])=>`<button class="court-opt ${s.court===k?'on':''}" data-set="court" data-val="${k}"><svg viewBox="0 0 500 300">${courtSvg(false,k)}<circle cx="190" cy="240" r="24" fill="${ACC}"/><circle cx="320" cy="200" r="22" fill="${c.deff}" stroke="${c.def}" stroke-width="3"/></svg><span>${c.n}</span></button>`).join('')}</div>
+   <div class="gl">Players</div>
+   <div class="pprev" style="background:${cp().bg}"><svg viewBox="40 22 420 110">${defs()}<rect width="500" height="150" fill="${cp().bg}"/>${pl({x:80,y:58},0,{flat:1})}${pl({x:128,y:98},5)}${pl({x:250,y:58},1,{flat:1})}${pl({x:298,y:98},6)}${pl({x:420,y:58},2,{flat:1})}</svg></div>
+   <div class="list">
+    <div class="li col"><span class="tx">Offense color</span><div class="sws">${OFF_COLORS.map(c=>swatch('offColor',c)).join('')}</div></div>
+    <div class="li col"><span class="tx">Defense color</span><div class="sws">${['auto',...OFF_COLORS].map(c=>swatch('defColor',c)).join('')}</div></div>
+    <div class="li col"><span class="tx">Defense style</span><div class="dstyles">${DEF_STYLES.map(([k,l])=>`<button class="dst ${s.defStyle===k?'on':''}" data-set="defStyle" data-val="${k}"><svg viewBox="-32 -30 64 60"><rect x="-32" y="-30" width="64" height="60" fill="${cp().bg}"/>${withStyle(k,()=>pl({x:0,y:0},5,{noname:1}))}</svg><span>${l}</span></button>`).join('')}</div></div>
+    <div class="li col"><span class="tx">Show on players</span><div class="seg full">${[['num','1–5'],['jersey','Jersey #'],['name','Names']].map(([v,l])=>`<button data-set="labels" data-val="${v}" class="${s.labels===v?'on':''}">${l}</button>`).join('')}</div></div>
+    <button class="li" id="names">${ic('users',20)}<span class="tx">Player names and numbers<small>For offense and defense</small></span>${ic('chev',18)}</button>
+   </div>
    <div class="gl">App</div>
    <div class="list">
     <button class="li" id="inst">${ic('download',20)}<span class="tx">${standalone()?'Installed on this device':'Add to home screen'}</span>${ic('chev',18)}</button>
@@ -872,6 +1034,7 @@ function setScreen(){
   $('#exp').onclick=()=>{download('playbook-backup.json',new Blob([JSON.stringify({app:'playbook',v:2,plays:store.plays,team:store.team,favs:store.favs},null,1)],{type:'application/json'}));toast('Backup saved')};
   $('#imp').onclick=()=>$('#file').click();
   $('#inst').onclick=()=>installSheet();
+  $('#names').onclick=()=>rosterSheet();
   $('#instl').onclick=()=>{const url=installUrl();if(navigator.share)navigator.share({title:'Get Playbook',url}).catch(()=>{});else (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast('Install link copied'),()=>prompt('Copy this link',url))};
   $('#file').onchange=async e=>{
     try{const j=JSON.parse(await e.target.files[0].text());let n=0;
